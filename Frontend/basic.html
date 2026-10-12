@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartClass AI — Energy Management</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Final Frontend -->
+<style>
+/* ═══════════════════════════════════
+   RESET + VARIABLES
+═══════════════════════════════════ */
+:root{
+
+  --bg:#f4f8ff;
+  --surface:rgba(255,255,255,0.82);
+  --surface2:#edf4ff;
+
+  --border:rgba(15,23,42,0.06);
+
+  --accent:#22c55e;
+  --accent2:#3b82f6;
+
+  --danger:#ef4444;
+
+  --text:#0f172a;
+  --muted:#64748b;
+
+  --mono:'Space Mono', monospace;
+  --sans:'DM Sans', sans-serif;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  font-family:var(--sans);
+
+  background:
+    radial-gradient(circle at top right, rgba(59,130,246,0.08), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(34,197,94,0.08), transparent 28%),
+    var(--bg);
+
+  min-height:100vh;
+  overflow-x:hidden;
+
+  color:var(--text);
+}
+
+/* GRID BACKGROUND */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+
+  background-image:
+    linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+
+  background-size:40px 40px;
+
+  pointer-events:none;
+  z-index:0;
+}
+
+/* ═══════════════════════════════════
+   HEADER
+═══════════════════════════════════ */
+header{
+  position:sticky;
+  top:0;
+  z-index:100;
+
+  height:64px;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:0 1.4rem;
+
+  background:rgba(255,255,255,0.72);
+  backdrop-filter:blur(14px);
+
+  border-bottom:1px solid var(--border);
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.logo-icon{
+  width:40px;
+  height:40px;
+
+  border-radius:14px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+
+  color:white;
+  font-size:18px;
+}
+
+.logo-text{
+  font-size:14px;
+  font-family:var(--mono);
+  font-weight:700;
+}
+
+.logo-sub{
+  font-size:10px;
+  color:var(--muted);
+  font-family:var(--mono);
+}
+
+.header-right{
+  display:flex;
+  align-items:center;
+  gap:18px;
+}
+
+.live-dot{
+  display:flex;
+  align-items:center;
+  gap:8px;
+
+  color:var(--accent);
+
+  font-size:11px;
+  font-family:var(--mono);
+}
+
+.dot{
+  width:8px;
+  height:8px;
+
+  border-radius:50%;
+  background:var(--accent);
+
+  animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+  0%,100%{
+    transform:scale(1);
+    opacity:1;
+  }
+  50%{
+    transform:scale(.7);
+    opacity:.4;
+  }
+}
+
+/* ═══════════════════════════════════
+   MAIN DASHBOARD GRID
+═══════════════════════════════════ */
+main{
+  position:relative;
+  z-index:1;
+
+  max-width:1500px;
+
+  margin:auto;
+
+  padding:0.9rem;
+
+  display:grid;
+
+  gap:0.9rem;
+
+  grid-template-columns:
+    1.15fr
+    1fr
+    1fr;
+
+  grid-template-areas:
+
+    "hero hero hero"
+
+    "cam light fan"
+
+    "cam energy energy"
+
+    "chart chart chart"
+
+    "log log log";
+}
+
+/* ═══════════════════════════════════
+   BASE CARD
+═══════════════════════════════════ */
+.card{
+  background:var(--surface);
+
+  border:1px solid var(--border);
+
+  border-radius:20px;
+
+  backdrop-filter:blur(10px);
+
+  padding:1rem;
+
+  overflow:hidden;
+
+  box-shadow:
+    0 8px 24px rgba(15,23,42,0.04);
+}
+
+.card:hover{
+  transform:translateY(-2px);
+  transition:.25s ease;
+}
+
+.card-label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+
+  margin-bottom:.8rem;
+
+  font-size:10px;
+  color:var(--muted);
+
+  letter-spacing:.14em;
+  text-transform:uppercase;
+
+  font-family:var(--mono);
+}
+
+.card-label::before{
+  content:'';
+
+  width:4px;
+  height:12px;
+
+  border-radius:20px;
+
+  background:
+    linear-gradient(var(--accent),var(--accent2));
+}
+
+/* ═══════════════════════════════════
+   HERO
+═══════════════════════════════════ */
+.card-hero{
+  grid-area:hero;
+
+  min-height:110px;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.hero-status{
+  font-size:52px;
+  font-family:var(--mono);
+  font-weight:700;
+
+  color:var(--accent);
+}
+
+.hero-status.danger{
+  color:var(--danger);
+}
+
+.hero-room{
+  margin-top:8px;
+
+  font-size:13px;
+  color:var(--muted);
+
+  font-family:var(--mono);
+}
+
+.hero-time{
+  margin-top:4px;
+
+  font-size:11px;
+  color:var(--muted);
+}
+
+.status-ring{
+  width:90px;
+  height:90px;
+
+  position:relative;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.ring-circle{
+  fill:none;
+  stroke:#dbeafe;
+  stroke-width:6;
+}
+
+.ring-fill{
+  fill:none;
+  stroke:var(--accent);
+  stroke-width:6;
+
+  stroke-linecap:round;
+
+  stroke-dasharray:283;
+  stroke-dashoffset:70;
+}
+
+.ring-label{
+  position:absolute;
+  font-family:var(--mono);
+}
+
+/* ═══════════════════════════════════
+   LIGHT CARD
+═══════════════════════════════════ */
+.card:nth-child(2){
+  grid-area:light;
+  min-height:180px;
+}
+
+/* FAN CARD */
+.card:nth-child(3){
+  grid-area:fan;
+  min-height:180px;
+}
+
+/* DEVICE */
+.device-row{
+  height:100%;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.device-state{
+  font-size:24px;
+  font-family:var(--mono);
+  font-weight:700;
+}
+
+.device-state.on{
+  color:var(--accent);
+}
+
+.device-state.off{
+  color:var(--danger);
+}
+
+.device-icon{
+  font-size:34px;
+}
+
+.device-icon.off{
+  opacity:.35;
+}
+
+.device-icon.on-spin{
+  animation:spin 2s linear infinite;
+}
+
+@keyframes spin{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+
+.device-badge{
+  display:inline-flex;
+
+  padding:4px 10px;
+
+  border-radius:20px;
+
+  margin-top:8px;
+
+  font-size:10px;
+
+  font-family:var(--mono);
+}
+
+.badge-on{
+  background:rgba(34,197,94,0.12);
+  color:var(--accent);
+}
+
+.badge-off{
+  background:rgba(239,68,68,0.12);
+  color:var(--danger);
+}
+
+/* ═══════════════════════════════════
+   CAMERA
+═══════════════════════════════════ */
+.card-cam{
+  grid-area:cam;
+
+  min-height:540px;
+
+  padding:0;
+
+  display:flex;
+  flex-direction:column;
+}
+
+.cam-header{
+  height:52px;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:0 1rem;
+
+  border-bottom:1px solid var(--border);
+}
+
+.cam-frame{
+  position:relative;
+
+  flex:1;
+
+  background:#000;
+}
+
+.cam-frame img{
+  /* position:absolute; */
+  inset:0;
+
+  width:100%;
+  height:100%;
+
+  /* object-fit:cover; */
+
+  border:none;
+}
+
+.cam-overlay{
+  position:absolute;
+
+  left:0;
+  right:0;
+  bottom:0;
+
+  padding:10px 14px;
+
+  display:flex;
+  justify-content:space-between;
+
+  background:
+    linear-gradient(
+      transparent,
+      rgba(0,0,0,.82)
+    );
+
+  color:white;
+
+  font-size:10px;
+
+  font-family:var(--mono);
+}
+
+/* ═══════════════════════════════════
+   ENERGY CARD
+═══════════════════════════════════ */
+.card:nth-child(5){
+  grid-area:energy;
+
+  min-height:350px;
+
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.energy-big{
+  font-size:44px;
+  font-family:var(--mono);
+  font-weight:700;
+
+  color:var(--accent);
+}
+
+.energy-unit{
+  font-size:15px;
+  color:var(--muted);
+}
+
+.time-bar{
+  margin-top:1rem;
+}
+
+.time-bar-label{
+  display:flex;
+  justify-content:space-between;
+
+  margin-bottom:6px;
+
+  font-size:11px;
+
+  font-family:var(--mono);
+}
+
+.bar-track{
+  height:8px;
+
+  border-radius:20px;
+
+  overflow:hidden;
+
+  background:#dbeafe;
+}
+
+.bar-fill{
+  height:100%;
+
+  border-radius:20px;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--accent2),
+      var(--accent)
+    );
+}
+
+.energy-stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+
+  gap:.8rem;
+
+  margin-top:1rem;
+}
+
+.estat{
+  padding:14px;
+
+  border-radius:14px;
+
+  background:var(--surface2);
+}
+
+.estat-val{
+  font-size:22px;
+  font-weight:700;
+
+  font-family:var(--mono);
+}
+
+.estat-lbl{
+  font-size:11px;
+  color:var(--muted);
+}
+
+/* ═══════════════════════════════════
+   CHART
+═══════════════════════════════════ */
+.card-chart{
+  grid-area:chart;
+
+  min-height:320px;
+
+  width:100%;
+}
+
+.chart-wrap{
+  height:240px;
+}
+
+/* ═══════════════════════════════════
+   LOG
+═══════════════════════════════════ */
+.card-log{
+  grid-area:log;
+
+  min-height:320px;
+}
+
+.log-list{
+  display:flex;
+  flex-direction:column;
+
+  gap:10px;
+
+  max-height:240px;
+
+  overflow-y:auto;
+
+  padding-right:4px;
+}
+
+.log-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+
+  padding:12px;
+
+  border-radius:14px;
+
+  background:var(--surface2);
+
+  border-left:4px solid transparent;
+}
+
+.log-item.occupied{
+  border-left-color:var(--accent);
+}
+
+.log-item.unoccupied{
+  border-left-color:var(--danger);
+}
+
+.log-text{
+  font-size:12px;
+  font-weight:600;
+}
+
+.log-room{
+  font-size:11px;
+  color:var(--muted);
+}
+
+.log-time{
+  margin-left:auto;
+
+  font-size:10px;
+
+  color:var(--muted);
+
+  font-family:var(--mono);
+}
+
+/* SCROLLBAR */
+.log-list::-webkit-scrollbar{
+  width:7px;
+}
+
+.log-list::-webkit-scrollbar-thumb{
+  background:rgba(100,116,139,0.4);
+  border-radius:20px;
+}
+
+/* ═══════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════ */
+@media(max-width:1100px){
+
+  main{
+    grid-template-columns:1fr 1fr;
+
+    grid-template-areas:
+
+      "hero hero"
+
+      "light fan"
+
+      "cam cam"
+
+      "energy energy"
+
+      "chart chart"
+
+      "log log";
+  }
+}
+
+@media(max-width:768px){
+
+  main{
+    grid-template-columns:1fr;
+
+    grid-template-areas:
+
+      "hero"
+      "light"
+      "fan"
+      "cam"
+      "energy"
+      "chart"
+      "log";
+  }
+
+  .hero-status{
+    font-size:38px;
+  }
+
+  .card-cam{
+    min-height:420px;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <div class="logo-text">SMARTCLASS AI</div>
+      <div class="logo-sub">Energy Management System</div>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="live-dot">
+      <div class="dot"></div>
+      LIVE
+    </div>
+    <div class="clock-block">
+      <div class="clock-time" id="clock-time">--:--:--</div>
+      <div class="clock-date" id="clock-date">---</div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main>
+
+  <!-- ═══ HERO STATUS ═══ -->
+  <div class="card card-hero" id="hero-card">
+    <div class="hero-left">
+      <div class="card-label">Classroom A101 — Live Occupancy</div>
+      <div class="hero-status" id="hero-status">LOADING...</div>
+      <div class="hero-room" id="hero-room">Fetching data...</div>
+      <div class="hero-time" id="hero-time"></div>
+    </div>
+    <div class="hero-right">
+      <div class="status-ring">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle class="ring-circle" cx="50" cy="50" r="45"/>
+          <circle class="ring-fill" id="ring-fill" cx="50" cy="50" r="45"/>
+        </svg>
+        <span class="ring-label" id="ring-label">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LIGHT DEVICE ═══ -->
+  <div class="card">
+    <div class="card-label">Light Control</div>
+    <div class="device-row">
+      <div>
+        <div class="device-state off" id="light-state">OFF</div>
+        <div class="device-badge badge-off" id="light-badge" style="margin-top:6px;">INACTIVE</div>
+      </div>
+      <div class="device-icon off" id="light-icon">💡</div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:14px;font-family:var(--mono);">
+      Active LOW relay — ESP32 controlled
+    </p>
+  </div>
+
+  <!-- ═══ FAN DEVICE ═══ -->
+  <div class="card">
+    <div class="card-label">Fan Control</div>
+    <div class="device-row">
+      <div>
+        <div class="device-state off" id="fan-state">OFF</div>
+        <div class="device-badge badge-off" id="fan-badge" style="margin-top:6px;">INACTIVE</div>
+      </div>
+      <div class="device-icon off" id="fan-icon">🌀</div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:14px;font-family:var(--mono);">
+      UI simulation only — occupancy linked
+    </p>
+  </div>
+
+  <!-- ═══ WEBCAM STREAM ═══ -->
+  <div class="card card-cam">
+    <div class="cam-header">
+      <div class="cam-label">Live Detection Feed</div>
+      <div class="rec-dot"><span></span> REC</div>
+    </div>
+    <div class="cam-frame">
+      <img id="cam-iframe"
+     src="http://localhost:5000/video_feed"
+     alt="Live Stream">
+      <div class="cam-overlay">
+        <span>CAM-01 · A101</span>
+        <span id="cam-time">--:--:--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ENERGY SAVINGS ═══ -->
+  <div class="card">
+    <div class="card-label">Energy Savings Today</div>
+    <div class="energy-big">
+      <span id="saved-kwh">0.00</span>
+      <span class="energy-unit">kWh</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);font-family:var(--mono);">
+      saved vs always-on baseline
+    </div>
+
+    <div class="time-bar">
+      <div class="time-bar-label">
+        <span>🟢 Occupied</span>
+        <span>🔴 Unoccupied</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" id="occ-bar" style="width:50%;"></div>
+      </div>
+    </div>
+
+    <div class="energy-stats">
+      <div class="estat">
+        <div class="estat-val" id="occ-min" style="color:var(--accent);">0</div>
+        <div class="estat-lbl">Occupied (min)</div>
+      </div>
+      <div class="estat">
+        <div class="estat-val" id="unocc-min" style="color:var(--danger);">0</div>
+        <div class="estat-lbl">Unoccupied (min)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ANALYTICS CHART ═══ -->
+  <div class="card card-chart">
+    <div class="card-label">Occupancy Trend — Last 20 Records</div>
+    <div class="chart-wrap">
+      <canvas id="trend-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- ═══ ACTIVITY LOG ═══ -->
+  <div class="card card-log">
+    <div class="card-label">Activity Log</div>
+    <div class="log-list" id="log-list">
+      <div style="color:var(--muted);font-size:12px;font-family:var(--mono);padding:1rem;">
+        Loading events...
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════
+const API = "http://localhost:3000";
+let chart = null;
+let lastStatus = null;
+
+// ═══════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById("clock-time").textContent =
+    now.toLocaleTimeString("en-IN");
+  document.getElementById("clock-date").textContent =
+    now.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
+  document.getElementById("cam-time").textContent =
+    now.toLocaleTimeString("en-IN");
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════
+// FETCH LATEST STATUS
+// ═══════════════════════════════════
+async function fetchStatus() {
+  try {
+    const res = await fetch(`${API}/latest`);
+    const data = await res.json();
+    applyStatus(data.status);
+  } catch (e) {
+    console.error("Status fetch failed:", e);
+  }
+}
+
+function applyStatus(status) {
+  const occupied = status === "Occupied";
+
+  // Hero card
+  const heroCard   = document.getElementById("hero-card");
+  const heroStatus = document.getElementById("hero-status");
+  const heroRoom   = document.getElementById("hero-room");
+  const heroTime   = document.getElementById("hero-time");
+  const ringFill   = document.getElementById("ring-fill");
+  const ringLabel  = document.getElementById("ring-label");
+
+  heroStatus.textContent = occupied ? "OCCUPIED" : "UNOCCUPIED";
+  heroRoom.textContent   = "Classroom A101 — Batch B";
+  heroTime.textContent   = "Last updated: " + new Date().toLocaleTimeString("en-IN");
+
+  heroStatus.classList.toggle("danger", !occupied);
+  heroCard.classList.toggle("danger", !occupied);
+
+  ringFill.classList.toggle("danger", !occupied);
+  ringFill.style.strokeDashoffset = occupied ? "71" : "212";
+  ringLabel.textContent = occupied ? "●" : "○";
+
+  // Devices
+  setDevice("light", occupied);
+  setDevice("fan", occupied);
+
+  lastStatus = status;
+}
+
+function setDevice(id, on) {
+  const stateEl = document.getElementById(`${id}-state`);
+  const badgeEl = document.getElementById(`${id}-badge`);
+  const iconEl  = document.getElementById(`${id}-icon`);
+
+  stateEl.textContent = on ? "ON" : "OFF";
+  stateEl.className   = `device-state ${on ? "on" : "off"}`;
+  badgeEl.textContent = on ? "ACTIVE" : "INACTIVE";
+  badgeEl.className   = `device-badge ${on ? "badge-on" : "badge-off"}`;
+  iconEl.className    = `device-icon${on ? "" : " off"}${id === "fan" && on ? " on-spin" : ""}`;
+}
+
+// ═══════════════════════════════════
+// ENERGY DATA
+// ═══════════════════════════════════
+async function fetchEnergy() {
+  try {
+    const res  = await fetch(`${API}/energy`);
+    const data = await res.json();
+
+    document.getElementById("saved-kwh").textContent  = data.savedKwh || "0.00";
+    document.getElementById("occ-min").textContent    = data.occupiedMinutes  || 0;
+    document.getElementById("unocc-min").textContent  = data.unoccupiedMinutes || 0;
+
+    const total = (data.occupied || 0) + (data.unoccupied || 0);
+    const pct   = total > 0 ? ((data.occupied / total) * 100).toFixed(1) : 50;
+    document.getElementById("occ-bar").style.width = `${pct}%`;
+
+  } catch (e) {
+    console.error("Energy fetch failed:", e);
+  }
+}
+
+
+function formatISTTime(timestamp) {
+
+  const date = new Date(timestamp);
+
+  return date.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  });
+
+}
+// ═══════════════════════════════════
+// ACTIVITY LOG
+// ═══════════════════════════════════
+async function fetchLogs() {
+  try {
+    const res  = await fetch(`${API}/logs`);
+    const data = await res.json();
+
+    const logList = document.getElementById("log-list");
+
+    if (!data.length) {
+      logList.innerHTML = `<div style="color:var(--muted);font-size:12px;font-family:var(--mono);padding:8px;">No events yet.</div>`;
+      return;
+    }
+
+    logList.innerHTML = data.map(row => {
+      const occ    = row.status === "Occupied";
+      const icon   = occ ? "🟢" : "🔴";
+      const action = occ ? "Room became Occupied — Lights & Fan ON" : "Room Unoccupied — Lights & Fan OFF";
+      const raw = row.timestamp.toString();
+
+      const year   = raw.slice(0, 4);
+      const month  = raw.slice(4, 6);
+      const day    = raw.slice(6, 8);
+      const hour   = raw.slice(8, 10);
+      const minute = raw.slice(10, 12);
+      const second = raw.slice(12, 14);
+
+      const formattedDate = `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+
+      const ts = new Date(formattedDate).toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+     });
+      return `
+        <div class="log-item ${occ ? "occupied" : "unoccupied"}">
+          <div class="log-icon">${icon}</div>
+          <div>
+            <div class="log-text">${action}</div>
+            <div class="log-room">${row.clsRoom}</div>
+          </div>
+          <div class="log-time">${ts}</div>
+        </div>
+      `;
+    }).join("");
+
+  } catch (e) {
+    console.error("Log fetch failed:", e);
+  }
+}
+
+// ═══════════════════════════════════
+// CHART
+// ═══════════════════════════════════
+async function fetchAnalytics() {
+  try {
+    const res  = await fetch(`${API}/analytics`);
+    const data = await res.json();
+
+    const labels = data.map(r => {
+
+    const raw = r.timestamp.toString();
+
+    const year   = raw.slice(0, 4);
+    const month  = raw.slice(4, 6);
+    const day    = raw.slice(6, 8);
+    const hour   = raw.slice(8, 10);
+    const minute = raw.slice(10, 12);
+    const second = raw.slice(12, 14);
+
+    const formattedDate =
+    `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+
+    return new Date(formattedDate).toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+    });
+
+});
+
+    const values = data.map(r => r.status === "Occupied" ? 1 : 0);
+
+    if (chart) {
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = values;
+      chart.update("none");
+      return;
+    }
+
+    const ctx = document.getElementById("trend-chart").getContext("2d");
+
+    chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "Occupancy (1=Occupied, 0=Empty)",
+          data: values,
+          borderColor: "#00ffa3",
+          backgroundColor: "rgba(0,255,163,0.08)",
+          borderWidth: 2,
+          fill: true,
+          tension: 0,
+          pointRadius: 4,
+          pointBackgroundColor: values.map(v => v ? "#00ffa3" : "#ff3b5c"),
+          pointBorderColor: "transparent",
+          stepped: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 400 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: "#111827",
+            titleColor: "#64748b",
+            bodyColor: "#e8edf5",
+            borderColor: "rgba(255,255,255,0.07)",
+            borderWidth: 1,
+            callbacks: {
+              label: ctx => ctx.parsed.y === 1 ? "  Occupied" : "  Unoccupied"
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: "rgba(255,255,255,0.04)" },
+            ticks: {
+              color: "#64748b",
+              font: { family: "'Space Mono', monospace", size: 10 },
+              maxTicksLimit: 8
+            }
+          },
+          y: {
+            min: -0.1, max: 1.1,
+            grid: { color: "rgba(255,255,255,0.04)" },
+            ticks: {
+              color: "#64748b",
+              font: { family: "'Space Mono', monospace", size: 10 },
+              callback: v => v === 1 ? "OCC" : v === 0 ? "EMPTY" : ""
+            }
+          }
+        }
+      }
+    });
+
+  } catch (e) {
+    console.error("Analytics fetch failed:", e);
+  }
+}
+
+// ═══════════════════════════════════
+// BOOT & INTERVALS
+// ═══════════════════════════════════
+function init() {
+  fetchStatus();
+  fetchEnergy();
+  fetchLogs();
+  fetchAnalytics();
+}
+
+init();
+setInterval(fetchStatus,   5000);   // live status every 5s
+setInterval(fetchEnergy,   15000);  // energy every 15s
+setInterval(fetchLogs,     10000);  // logs every 10s
+setInterval(fetchAnalytics, 20000); // chart every 20s
+</script>
+</body>
+</html>

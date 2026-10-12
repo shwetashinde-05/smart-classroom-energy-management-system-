@@ -1,0 +1,170 @@
+//Error less code for one LED
+
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+// WiFi credentials
+
+
+const char* ssid = "shivu shinde 2";
+const char* password = "123456789";
+
+// Server URL
+String serverURL = "http://192.168.1.6:3000/latest";
+
+// Use ONLY one pin now
+#define LIGHT_PIN 5   // LED connected here
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(LIGHT_PIN, OUTPUT);
+
+  // LED OFF initially
+  digitalWrite(LIGHT_PIN, LOW);
+
+  Serial.println("Connecting to WiFi...");
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConnected!");
+  Serial.print("ESP32 IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+
+  if (WiFi.status() == WL_CONNECTED) {
+
+    HTTPClient http;
+    http.begin(serverURL);
+
+    int code = http.GET();
+
+    if (code > 0) {
+      Serial.print("HTTP Code: ");
+      Serial.println(code);
+
+      if (code == 200) {
+        String payload = http.getString();
+        Serial.println(payload);
+
+        // SAME LOGIC (no change)
+        if (payload.indexOf("Occupied") != -1) {
+          Serial.println("LED ON");
+          digitalWrite(LIGHT_PIN, HIGH); // LED ON
+        } else {
+          Serial.println("LED OFF");
+          digitalWrite(LIGHT_PIN, LOW);  // LED OFF
+        }
+      }
+
+    } else {
+      Serial.print("HTTP Error: ");
+      Serial.println(http.errorToString(code));
+
+      // Safety OFF
+      digitalWrite(LIGHT_PIN, LOW);
+    }
+
+    http.end();
+
+  } else {
+    Serial.println("WiFi Disconnected");
+
+    // Safety OFF
+    digitalWrite(LIGHT_PIN, LOW);
+  }
+
+  delay(5000); // 5 sec delay
+}
+
+
+
+//code 2
+// #include <WiFi.h>
+// #include <HTTPClient.h>
+
+// // WiFi credentials
+// const char* ssid = "Galaxy";
+// const char* password = "123456789";
+
+// // Server URL
+// String serverURL = "http://10.249.97.229:3000/latest";
+
+// // Use ONLY one pin now
+// #define LIGHT_PIN 5   // Relay / LED connected here
+
+// void setup() {
+//   Serial.begin(115200);
+
+//   pinMode(LIGHT_PIN, OUTPUT);
+
+//   // ⚡ ACTIVE LOW → OFF initially = HIGH
+//   digitalWrite(LIGHT_PIN, HIGH);
+
+//   Serial.println("Connecting to WiFi...");
+
+//   WiFi.begin(ssid, password);
+
+//   while (WiFi.status() != WL_CONNECTED) {
+//     delay(500);
+//     Serial.print(".");
+//   }
+
+//   Serial.println("\nConnected!");
+//   Serial.print("ESP32 IP: ");
+//   Serial.println(WiFi.localIP());
+// }
+
+// void loop() {
+
+//   if (WiFi.status() == WL_CONNECTED) {
+
+//     HTTPClient http;
+//     http.begin(serverURL);
+
+//     int code = http.GET();
+
+//     if (code > 0) {
+//       Serial.print("HTTP Code: ");
+//       Serial.println(code);
+
+//       if (code == 200) {
+//         String payload = http.getString();
+//         Serial.println(payload);
+
+//         // ✅ SAFE JSON CHECK
+//         if (payload.indexOf("\"status\":\"Occupied\"") != -1) {
+//           Serial.println("Relay ON");
+//           digitalWrite(LIGHT_PIN, LOW);   // ACTIVE LOW → ON
+//         } else {
+//           Serial.println("Relay OFF");
+//           digitalWrite(LIGHT_PIN, HIGH);  // ACTIVE LOW → OFF
+//         }
+//       }
+
+//     } else {
+//       Serial.print("HTTP Error: ");
+//       Serial.println(http.errorToString(code));
+
+//       // ⚡ Safety OFF
+//       digitalWrite(LIGHT_PIN, HIGH);
+//     }
+
+//     http.end();
+
+//   } else {
+//     Serial.println("WiFi Disconnected");
+
+//     // ⚡ Safety OFF
+//     digitalWrite(LIGHT_PIN, HIGH);
+//   }
+
+//   delay(5000); // 5 sec delay
+// }
